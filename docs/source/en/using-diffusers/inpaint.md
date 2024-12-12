@@ -1,4 +1,4 @@
-<!--Copyright 2023 The HuggingFace Team. All rights reserved.
+<!--Copyright 2024 The HuggingFace Team. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
 the License. You may obtain a copy of the License at
@@ -77,11 +77,41 @@ Throughout this guide, the mask image is provided in all of the code examples fo
 Upload a base image to inpaint on and use the sketch tool to draw a mask. Once you're done, click **Run** to generate and download the mask image.
 
 <iframe
-	src="https://stevhliu-inpaint-mask-maker.hf.space"
-	frameborder="0"
-	width="850"
-	height="450"
+  src="https://stevhliu-inpaint-mask-maker.hf.space"
+  frameborder="0"
+  width="850"
+  height="450"
 ></iframe>
+
+### Mask blur
+
+The [`~VaeImageProcessor.blur`] method provides an option for how to blend the original image and inpaint area. The amount of blur is determined by the `blur_factor` parameter. Increasing the `blur_factor` increases the amount of blur applied to the mask edges, softening the transition between the original image and inpaint area. A low or zero `blur_factor` preserves the sharper edges of the mask.
+
+To use this, create a blurred mask with the image processor.
+
+```py
+import torch
+from diffusers import AutoPipelineForInpainting
+from diffusers.utils import load_image
+from PIL import Image
+
+pipeline = AutoPipelineForInpainting.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5", torch_dtype=torch.float16).to('cuda')
+
+mask = load_image("https://huggingface.co/datasets/YiYiXu/testing-images/resolve/main/seashore_mask.png")
+blurred_mask = pipeline.mask_processor.blur(mask, blur_factor=33)
+blurred_mask
+```
+
+<div class="flex gap-4">
+  <div>
+    <img class="rounded-xl" src="https://huggingface.co/datasets/YiYiXu/testing-images/resolve/main/seashore_mask.png"/>
+    <figcaption class="mt-2 text-center text-sm text-gray-500">mask with no blur</figcaption>
+  </div>
+  <div>
+    <img class="rounded-xl" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/mask_blurred.png"/>
+    <figcaption class="mt-2 text-center text-sm text-gray-500">mask with blur applied</figcaption>
+  </div>
+</div>
 
 ## Popular models
 
@@ -186,12 +216,13 @@ make_image_grid([init_image, mask_image, image], rows=1, cols=3)
 
 ## Non-inpaint specific checkpoints
 
-So far, this guide has used inpaint specific checkpoints such as [runwayml/stable-diffusion-inpainting](https://huggingface.co/runwayml/stable-diffusion-inpainting). But you can also use regular checkpoints like [runwayml/stable-diffusion-v1-5](https://huggingface.co/runwayml/stable-diffusion-v1-5). Let's compare the results of the two checkpoints.
+
+So far, this guide has used inpaint specific checkpoints such as [stable-diffusion-v1-5/stable-diffusion-inpainting](https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-inpainting). But you can also use regular checkpoints like [stable-diffusion-v1-5/stable-diffusion-v1-5](https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5). Let's compare the results of the two checkpoints.
 
 The image on the left is generated from a regular checkpoint, and the image on the right is from an inpaint checkpoint. You'll immediately notice the image on the left is not as clean, and you can still see the outline of the area the model is supposed to inpaint. The image on the right is much cleaner and the inpainted area appears more natural.
 
 <hfoptions id="regular-specific">
-<hfoption id="runwayml/stable-diffusion-v1-5">
+<hfoption id="stable-diffusion-v1-5/stable-diffusion-v1-5">
 
 ```py
 import torch
@@ -199,8 +230,8 @@ from diffusers import AutoPipelineForInpainting
 from diffusers.utils import load_image, make_image_grid
 
 pipeline = AutoPipelineForInpainting.from_pretrained(
-    "runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16"
-).to("cuda")
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16"
+)
 pipeline.enable_model_cpu_offload()
 # remove following line if xFormers is not installed or you have PyTorch 2.0 or higher installed
 pipeline.enable_xformers_memory_efficient_attention()
@@ -225,7 +256,7 @@ from diffusers.utils import load_image, make_image_grid
 
 pipeline = AutoPipelineForInpainting.from_pretrained(
     "runwayml/stable-diffusion-inpainting", torch_dtype=torch.float16, variant="fp16"
-).to("cuda")
+)
 pipeline.enable_model_cpu_offload()
 # remove following line if xFormers is not installed or you have PyTorch 2.0 or higher installed
 pipeline.enable_xformers_memory_efficient_attention()
@@ -246,7 +277,7 @@ make_image_grid([init_image, image], rows=1, cols=2)
 <div class="flex gap-4">
   <div>
     <img class="rounded-xl" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/non-inpaint-specific.png"/>
-    <figcaption class="mt-2 text-center text-sm text-gray-500">runwayml/stable-diffusion-v1-5</figcaption>
+    <figcaption class="mt-2 text-center text-sm text-gray-500">stable-diffusion-v1-5/stable-diffusion-v1-5</figcaption>
   </div>
   <div>
     <img class="rounded-xl" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/inpaint-specific.png"/>
@@ -257,7 +288,7 @@ make_image_grid([init_image, image], rows=1, cols=2)
 However, for more basic tasks like erasing an object from an image (like the rocks in the road for example), a regular checkpoint yields pretty good results. There isn't as noticeable of difference between the regular and inpaint checkpoint.
 
 <hfoptions id="inpaint">
-<hfoption id="runwayml/stable-diffusion-v1-5">
+<hfoption id="stable-diffusion-v1-5/stable-diffusion-v1-5">
 
 ```py
 import torch
@@ -265,8 +296,8 @@ from diffusers import AutoPipelineForInpainting
 from diffusers.utils import load_image, make_image_grid
 
 pipeline = AutoPipelineForInpainting.from_pretrained(
-    "runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16"
-).to("cuda")
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16"
+)
 pipeline.enable_model_cpu_offload()
 # remove following line if xFormers is not installed or you have PyTorch 2.0 or higher installed
 pipeline.enable_xformers_memory_efficient_attention()
@@ -289,7 +320,7 @@ from diffusers.utils import load_image, make_image_grid
 
 pipeline = AutoPipelineForInpainting.from_pretrained(
     "runwayml/stable-diffusion-inpainting", torch_dtype=torch.float16, variant="fp16"
-).to("cuda")
+)
 pipeline.enable_model_cpu_offload()
 # remove following line if xFormers is not installed or you have PyTorch 2.0 or higher installed
 pipeline.enable_xformers_memory_efficient_attention()
@@ -308,7 +339,7 @@ make_image_grid([init_image, image], rows=1, cols=2)
 <div class="flex gap-4">
   <div>
     <img class="rounded-xl" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/regular-inpaint-basic.png"/>
-    <figcaption class="mt-2 text-center text-sm text-gray-500">runwayml/stable-diffusion-v1-5</figcaption>
+    <figcaption class="mt-2 text-center text-sm text-gray-500">stable-diffusion-v1-5/stable-diffusion-v1-5</figcaption>
   </div>
   <div>
     <img class="rounded-xl" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/specific-inpaint-basic.png"/>
@@ -318,7 +349,7 @@ make_image_grid([init_image, image], rows=1, cols=2)
 
 The trade-off of using a non-inpaint specific checkpoint is the overall image quality may be lower, but it generally tends to preserve the mask area (that is why you can see the mask outline). The inpaint specific checkpoints are intentionally trained to generate higher quality inpainted images, and that includes creating a more natural transition between the masked and unmasked areas. As a result, these checkpoints are more likely to change your unmasked area.
 
-If preserving the unmasked area is important for your task, you can use the `apply_overlay` method of [`VaeImageProcessor`] to force the unmasked area of an image to remain the same at the expense of some more unnatural transitions between the masked and unmasked areas.
+If preserving the unmasked area is important for your task, you can use the [`VaeImageProcessor.apply_overlay`] method to force the unmasked area of an image to remain the same at the expense of some more unnatural transitions between the masked and unmasked areas.
 
 ```py
 import PIL
@@ -475,6 +506,39 @@ make_image_grid([init_image, mask_image, image], rows=1, cols=3)
   </figure>
 </div>
 
+### Padding mask crop
+
+A method for increasing the inpainting image quality is to use the [`padding_mask_crop`](https://huggingface.co/docs/diffusers/v0.25.0/en/api/pipelines/stable_diffusion/inpaint#diffusers.StableDiffusionInpaintPipeline.__call__.padding_mask_crop) parameter. When enabled, this option crops the masked area with some user-specified padding and it'll also crop the same area from the original image. Both the image and mask are upscaled to a higher resolution for inpainting, and then overlaid on the original image. This is a quick and easy way to improve image quality without using a separate pipeline like [`StableDiffusionUpscalePipeline`].
+
+Add the `padding_mask_crop` parameter to the pipeline call and set it to the desired padding value.
+
+```py
+import torch
+from diffusers import AutoPipelineForInpainting
+from diffusers.utils import load_image
+from PIL import Image
+
+generator = torch.Generator(device='cuda').manual_seed(0)
+pipeline = AutoPipelineForInpainting.from_pretrained("stable-diffusion-v1-5/stable-diffusion-v1-5", torch_dtype=torch.float16).to('cuda')
+
+base = load_image("https://huggingface.co/datasets/YiYiXu/testing-images/resolve/main/seashore.png")
+mask = load_image("https://huggingface.co/datasets/YiYiXu/testing-images/resolve/main/seashore_mask.png")
+
+image = pipeline("boat", image=base, mask_image=mask, strength=0.75, generator=generator, padding_mask_crop=32).images[0]
+image
+```
+
+<div class="flex gap-4">
+  <div>
+    <img class="rounded-xl" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/baseline_inpaint.png"/>
+    <figcaption class="mt-2 text-center text-sm text-gray-500">default inpaint image</figcaption>
+  </div>
+  <div>
+    <img class="rounded-xl" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/padding_mask_crop_inpaint.png"/>
+    <figcaption class="mt-2 text-center text-sm text-gray-500">inpaint image with `padding_mask_crop` enabled</figcaption>
+  </div>
+</div>
+
 ## Chained inpainting pipelines
 
 [`AutoPipelineForInpainting`] can be chained with other 🤗 Diffusers pipelines to edit their outputs. This is often useful for improving the output quality from your other diffusion pipelines, and if you're using multiple pipelines, it can be more memory-efficient to chain them together to keep the outputs in latent space and reuse the same pipeline components.
@@ -491,7 +555,7 @@ from diffusers import AutoPipelineForText2Image, AutoPipelineForInpainting
 from diffusers.utils import load_image, make_image_grid
 
 pipeline = AutoPipelineForText2Image.from_pretrained(
-    "runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
+    "stable-diffusion-v1-5/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
 )
 pipeline.enable_model_cpu_offload()
 # remove following line if xFormers is not installed or you have PyTorch 2.0 or higher installed
